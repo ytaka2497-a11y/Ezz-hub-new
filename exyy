@@ -1,0 +1,263 @@
+-- Ezz Hub NEW 完全版
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local LP = Players.LocalPlayer
+local W = workspace
+
+-- GUI作成
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.CoreGui
+
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0,300,0,400)
+Main.Position = UDim2.new(0.5,-150,0.5,-200)
+Main.BackgroundColor3 = Color3.fromRGB(63,180,255)
+Main.Active = true
+Main.Draggable = true
+Main.Parent = ScreenGui
+
+local Inner = Instance.new("Frame")
+Inner.Size = UDim2.new(1,-20,1,-20)
+Inner.Position = UDim2.new(0,10,0,10)
+Inner.BackgroundColor3 = Color3.fromRGB(255,255,255)
+Inner.Parent = Main
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,0,0,40)
+Title.BackgroundTransparency = 1
+Title.Text = "Ezz Hub"
+Title.TextScaled = true
+Title.Font = Enum.Font.GothamBold
+Title.TextColor3 = Color3.fromRGB(0,120,255)
+Title.Parent = Inner
+
+local ButtonList = Instance.new("Frame")
+ButtonList.Size = UDim2.new(1,-20,1,-60)
+ButtonList.Position = UDim2.new(0,10,0,50)
+ButtonList.BackgroundTransparency = 1
+ButtonList.Parent = Inner
+
+local UIList = Instance.new("UIListLayout")
+UIList.Padding = UDim.new(0,8)
+UIList.FillDirection = Enum.FillDirection.Vertical
+UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIList.SortOrder = Enum.SortOrder.LayoutOrder
+UIList.Parent = ButtonList
+
+local function MakeButton(text,callback)
+    local B = Instance.new("TextButton")
+    B.Size = UDim2.new(1,0,0,35)
+    B.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    B.BorderColor3 = Color3.fromRGB(63,180,255)
+    B.BorderSizePixel = 2
+    B.Text = text
+    B.TextColor3 = Color3.fromRGB(0,120,255)
+    B.Font = Enum.Font.Gotham
+    B.TextScaled = true
+    B.Parent = ButtonList
+    B.MouseButton1Click:Connect(callback)
+end
+
+--====================================================
+-- Q TP（キャラの向き前方3stud）
+--====================================================
+MakeButton("Q TP",function()
+    local c = LP.Character
+    local hrp = c and c:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = hrp.CFrame + hrp.CFrame.LookVector*3
+    end
+end)
+
+UIS.InputBegan:Connect(function(key,g)
+    if g then return end
+    if key.KeyCode == Enum.KeyCode.Q then
+        local c = LP.Character
+        local hrp = c and c:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.CFrame = hrp.CFrame + hrp.CFrame.LookVector*3 end
+    end
+end)
+
+--====================================================
+-- Fly（向いてる方向に飛ぶ）
+--====================================================
+local FlyEnabled = false
+local FlySpeed = 60
+
+MakeButton("Fly Toggle",function() FlyEnabled = not FlyEnabled end)
+local FlyInputConn
+UIS.InputBegan:Connect(function(key,g)
+    if g then return end
+    if key.KeyCode == Enum.KeyCode.F then FlyEnabled = not FlyEnabled end
+end)
+
+RunService.Heartbeat:Connect(function(dt)
+    local c = LP.Character
+    local hrp = c and c:FindFirstChild("HumanoidRootPart")
+    local cam = W.CurrentCamera
+    if FlyEnabled and hrp and cam then
+        hrp.Velocity = cam.CFrame.LookVector*FlySpeed
+    end
+end)
+
+--====================================================
+-- Third（足場作成）
+--====================================================
+local ThirdEnabled = false
+local platform
+MakeButton("3rd Toggle",function()
+    local c = LP.Character
+    local hrp = c and c:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    if ThirdEnabled then
+        if platform then platform:Destroy() platform = nil end
+        ThirdEnabled = false
+    else
+        platform = Instance.new("Part")
+        platform.Size = Vector3.new(4,0.5,4)
+        platform.Position = hrp.Position - Vector3.new(0,3,0)
+        platform.Anchored = true
+        platform.CanCollide = true
+        platform.Parent = W
+        ThirdEnabled = true
+        task.spawn(function()
+            while ThirdEnabled do
+                platform.Position = hrp.Position - Vector3.new(0,3,0)
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
+
+UIS.InputBegan:Connect(function(key,g)
+    if g then return end
+    if key.KeyCode == Enum.KeyCode.V then
+        local c = LP.Character
+        local hrp = c and c:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        if ThirdEnabled then
+            if platform then platform:Destroy() platform=nil end
+            ThirdEnabled=false
+        else
+            platform = Instance.new("Part")
+            platform.Size=Vector3.new(4,0.5,4)
+            platform.Position=hrp.Position-Vector3.new(0,3,0)
+            platform.Anchored=true
+            platform.CanCollide=true
+            platform.Parent=W
+            ThirdEnabled=true
+            task.spawn(function()
+                while ThirdEnabled do
+                    platform.Position=hrp.Position-Vector3.new(0,3,0)
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+end)
+
+--====================================================
+-- Hitbox Extender
+--====================================================
+_G.HeadSize = 50
+_G.HitboxEnabled = false
+
+MakeButton("Toggle Hitbox",function()
+    _G.HitboxEnabled = not _G.HitboxEnabled
+end)
+
+local RunConn
+RunConn = RunService.RenderStepped:Connect(function()
+    if _G.HitboxEnabled then
+        for i,v in pairs(Players:GetPlayers()) do
+            if v~=LP then
+                local hrp=v.Character and v.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.Size=Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
+                    hrp.Transparency=0.7
+                    hrp.BrickColor=BrickColor.new("Really blue")
+                    hrp.Material=Enum.Material.Neon
+                    hrp.CanCollide=false
+                end
+            end
+        end
+    end
+end)
+
+-- 数値入力用（簡易）
+MakeButton("Increase Hitbox Size",function()
+    _G.HeadSize=_G.HeadSize+5
+end)
+MakeButton("Decrease Hitbox Size",function()
+    _G.HeadSize=math.max(5,_G.HeadSize-5)
+end)
+
+--====================================================
+-- Animation
+--====================================================
+MakeButton("Animation",function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/kolllooomcj-bit/MCJANIMATION/refs/heads/main/ADIDAS%20COMMUNITY%20MCJ"))()
+end)
+
+--====================================================
+-- ESP（名前表示）
+--====================================================
+local ESPEnabled=false
+MakeButton("ESP Toggle",function()
+    ESPEnabled = not ESPEnabled
+end)
+
+RunService.Heartbeat:Connect(function()
+    if ESPEnabled then
+        for _,p in pairs(Players:GetPlayers()) do
+            if p~=LP then
+                local c=p.Character
+                if c then
+                    local h=c:FindFirstChild("HumanoidRootPart")
+                    local n=c:FindFirstChild("Head")
+                    if h and n then
+                        local Billboard = h:FindFirstChild("ESPBillboard")
+                        if not Billboard then
+                            Billboard = Instance.new("BillboardGui")
+                            Billboard.Name="ESPBillboard"
+                            Billboard.Size=UDim2.new(0,100,0,40)
+                            Billboard.AlwaysOnTop=true
+                            Billboard.Parent=h
+                            local txt = Instance.new("TextLabel")
+                            txt.Size=UDim2.new(1,0,1,0)
+                            txt.BackgroundTransparency=1
+                            txt.Text=p.Name
+                            txt.TextColor3=Color3.fromRGB(255,0,0)
+                            txt.TextScaled=true
+                            txt.Font=Enum.Font.GothamBold
+                            txt.Parent=Billboard
+                        end
+                    end
+                end
+            end
+        end
+    else
+        for _,p in pairs(Players:GetPlayers()) do
+            local c=p.Character
+            if c then
+                local h=c:FindFirstChild("HumanoidRootPart")
+                if h then
+                    local b=h:FindFirstChild("ESPBillboard")
+                    if b then b:Destroy() end
+                end
+            end
+        end
+    end
+end)
+
+--====================================================
+-- Bat 強制保持
+--====================================================
+MakeButton("Hold Bat",function()
+    for _,v in pairs(LP.Backpack:GetChildren()) do
+        if v.Name:lower()=="bat" then
+            v.Parent = LP.Character
+        end
+    end
+end)
